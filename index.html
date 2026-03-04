@@ -145,6 +145,99 @@
       box-shadow: none;
     }
     #close-cam:hover { transform: scale(1.2); box-shadow: none; }
+
+    /* Hippo reaction box */
+    #hippo-box {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      width: 280px;
+      background: #000;
+      border: 3px solid #6bcb77;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 30px #6bcb7788;
+      display: flex;
+      flex-direction: column;
+      z-index: 999;
+      animation: slideIn 0.4s ease;
+      cursor: grab;
+      user-select: none;
+    }
+
+    #hippo-box.dragging { cursor: grabbing; }
+
+    #hippo-header {
+      background: #6bcb77;
+      color: #1a1a2e;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    #live-dot {
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+      box-shadow: 0 0 6px red;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.1; }
+    }
+
+    #hippo-stage {
+      width: 100%;
+      height: 200px;
+      background: #2a4a5a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #hippo {
+      width: 100%;
+      height: 100%;
+      animation: hippoBreath 3s ease-in-out infinite;
+    }
+
+    @keyframes hippoBreath {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.03); }
+    }
+
+    #hippo-label {
+      background: rgba(0,0,0,0.75);
+      color: #6bcb77;
+      text-align: center;
+      padding: 6px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    #close-hippo {
+      background: none;
+      border: none;
+      color: #1a1a2e;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 4px;
+      margin: 0;
+      box-shadow: none;
+    }
+    #close-hippo:hover { transform: scale(1.2); }
   </style>
 </head>
 <body>
@@ -155,6 +248,47 @@
     <p id="setup"></p>
     <p id="punchline"></p>
     <button id="joke-btn" onclick="tellJoke()">Hit me with a dad joke</button>
+  </div>
+
+  <!-- Hippo reaction box -->
+  <div id="hippo-box">
+    <div id="hippo-header">
+      <span><span id="live-dot"></span>LIVE</span>
+      <span>LIVE HIPPO REACTION</span>
+      <button id="close-hippo" onclick="document.getElementById('hippo-box').style.display='none'" title="Close">✕</button>
+    </div>
+    <div id="hippo-stage">
+      <!-- SVG hippo face staring at camera -->
+      <svg id="hippo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Head -->
+        <ellipse cx="100" cy="115" rx="80" ry="70" fill="#7a9a8a"/>
+        <!-- Snout -->
+        <ellipse cx="100" cy="155" rx="55" ry="38" fill="#8aaa9a"/>
+        <!-- Nostrils -->
+        <ellipse cx="82" cy="148" rx="10" ry="7" fill="#4a6a5a"/>
+        <ellipse cx="118" cy="148" rx="10" ry="7" fill="#4a6a5a"/>
+        <!-- Eyes whites -->
+        <ellipse cx="68" cy="95" rx="18" ry="20" fill="white"/>
+        <ellipse cx="132" cy="95" rx="18" ry="20" fill="white"/>
+        <!-- Irises -->
+        <ellipse cx="68" cy="97" rx="11" ry="13" fill="#3a2a1a"/>
+        <ellipse cx="132" cy="97" rx="11" ry="13" fill="#3a2a1a"/>
+        <!-- Pupils -->
+        <ellipse cx="70" cy="98" rx="5" ry="6" fill="#111"/>
+        <ellipse cx="134" cy="98" rx="5" ry="6" fill="#111"/>
+        <!-- Eye shine -->
+        <ellipse cx="73" cy="94" rx="2.5" ry="2.5" fill="white"/>
+        <ellipse cx="137" cy="94" rx="2.5" ry="2.5" fill="white"/>
+        <!-- Ears -->
+        <ellipse cx="30" cy="65" rx="18" ry="14" fill="#7a9a8a"/>
+        <ellipse cx="170" cy="65" rx="18" ry="14" fill="#7a9a8a"/>
+        <ellipse cx="30" cy="65" rx="10" ry="8" fill="#c9a0a0"/>
+        <ellipse cx="170" cy="65" rx="10" ry="8" fill="#c9a0a0"/>
+        <!-- Mouth line -->
+        <path d="M 60 170 Q 100 182 140 170" stroke="#4a6a5a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div id="hippo-label">🦛 LIVE HIPPO REACTION 🦛</div>
   </div>
 
   <!-- Floating webcam -->
@@ -281,34 +415,34 @@
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    // Drag support for the cam box
-    const camBox = document.getElementById('cam-box');
-    let isDragging = false, dragOffX = 0, dragOffY = 0;
+    // Generic drag support
+    function makeDraggable(box, closeId) {
+      let isDragging = false, dragOffX = 0, dragOffY = 0;
+      box.addEventListener('mousedown', e => {
+        if (e.target.id === closeId) return;
+        isDragging = true;
+        box.classList.add('dragging');
+        const rect = box.getBoundingClientRect();
+        dragOffX = e.clientX - rect.left;
+        dragOffY = e.clientY - rect.top;
+        box.style.right = 'auto';
+        box.style.bottom = 'auto';
+        box.style.left = rect.left + 'px';
+        box.style.top = rect.top + 'px';
+      });
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        box.style.left = (e.clientX - dragOffX) + 'px';
+        box.style.top  = (e.clientY - dragOffY) + 'px';
+      });
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+        box.classList.remove('dragging');
+      });
+    }
 
-    camBox.addEventListener('mousedown', e => {
-      if (e.target.id === 'close-cam') return;
-      isDragging = true;
-      camBox.classList.add('dragging');
-      const rect = camBox.getBoundingClientRect();
-      dragOffX = e.clientX - rect.left;
-      dragOffY = e.clientY - rect.top;
-      // switch to absolute positioning for free drag
-      camBox.style.right = 'auto';
-      camBox.style.bottom = 'auto';
-      camBox.style.left = rect.left + 'px';
-      camBox.style.top = rect.top + 'px';
-    });
-
-    document.addEventListener('mousemove', e => {
-      if (!isDragging) return;
-      camBox.style.left = (e.clientX - dragOffX) + 'px';
-      camBox.style.top  = (e.clientY - dragOffY) + 'px';
-    });
-
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-      camBox.classList.remove('dragging');
-    });
+    makeDraggable(document.getElementById('cam-box'), 'close-cam');
+    makeDraggable(document.getElementById('hippo-box'), 'close-hippo');
   </script>
 </body>
 </html>
