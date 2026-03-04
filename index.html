@@ -245,6 +245,20 @@
       box-shadow: none;
     }
     #close-hippo:hover { transform: scale(1.2); }
+
+    @media (max-width: 600px) {
+      #hippo-box, #cam-box {
+        width: 44vw;
+        bottom: 12px;
+      }
+      #hippo-box { left: 8px; }
+      #cam-box   { right: 8px; }
+      #hippo-stage { height: 120px; }
+      #cam-video   { height: 120px; }
+      #hippo-header, #cam-header { font-size: 0.65rem; padding: 4px 6px; letter-spacing: 0; }
+      #hippo-label, #cam-label   { font-size: 0.65rem; padding: 4px; letter-spacing: 0; }
+      #close-hippo, #close-cam   { font-size: 0.85rem; }
+    }
   </style>
 </head>
 <body>
