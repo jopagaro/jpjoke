@@ -113,23 +113,7 @@
     }
 
     #rec-indicator {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    #rec-dot {
-      width: 12px;
-      height: 12px;
-      background: red;
-      border-radius: 50%;
-      animation: blink 1s infinite;
-      box-shadow: 0 0 6px red;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.1; }
+      display: none;
     }
 
     #cam-video {
@@ -194,6 +178,8 @@
       { setup: "I'm reading a book about anti-gravity.", punchline: "It's impossible to put down! 😂" },
       { setup: "Why don't eggs tell jokes?", punchline: "They'd crack each other up! 😂" },
       { setup: "Did you hear about the guy who invented Lifesavers?", punchline: "He made a mint! 😂" },
+      { setup: "Did you know orcas have a favorite dessert?", punchline: "Baked Alaska! 😂" },
+      { setup: "Did you know whales play badminton in the ocean?", punchline: "They use shrimp as the fly ball thingy! 😂" },
     ];
     let jokeIndex = 0;
     let busy = false;
@@ -237,28 +223,60 @@
       }
     }
 
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
     async function launchCam() {
       const box = document.getElementById('cam-box');
       box.style.display = 'flex';
 
       try {
-        camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const video = document.getElementById('cam-video');
         video.srcObject = camStream;
+
+        // Start recording
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(camStream, { mimeType: getSupportedMimeType() });
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.start(100);
       } catch (err) {
         const video = document.getElementById('cam-video');
         video.style.display = 'none';
         const label = document.getElementById('cam-label');
-        label.textContent = "😱 Camera denied — hiding something, Kate?";
+        label.textContent = "😱 Camera denied!";
       }
     }
 
+    function getSupportedMimeType() {
+      const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
+      return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    }
+
     function closeCam() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.onstop = saveRecording;
+        mediaRecorder.stop();
+      }
       if (camStream) {
         camStream.getTracks().forEach(t => t.stop());
         camStream = null;
       }
       document.getElementById('cam-box').style.display = 'none';
+    }
+
+    function saveRecording() {
+      if (!recordedChunks.length) return;
+      const mimeType = mediaRecorder.mimeType || 'video/webm';
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `laugh-cam-${Date.now()}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      recordedChunks = [];
     }
 
     function delay(ms) {
