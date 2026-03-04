@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>What's So Funny</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Georgia', serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 4.5rem);
+      color: #ff6b6b;
+      text-shadow: 0 0 20px #ff6b6b88;
+      margin-bottom: 40px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { text-shadow: 0 0 20px #ff6b6b88; }
+      50% { text-shadow: 0 0 40px #ff6b6bcc, 0 0 80px #ff6b6b44; }
+    }
+
+    #joke-section {
+      max-width: 600px;
+    }
+
+    #setup {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #ffd93d;
+    }
+
+    #punchline {
+      font-size: 1.3rem;
+      color: #6bcb77;
+      min-height: 2em;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    #punchline.visible {
+      opacity: 1;
+    }
+
+    button {
+      margin-top: 30px;
+      padding: 14px 32px;
+      font-size: 1.1rem;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px #ff6b6b66;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 25px #ff6b6b99;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    /* Floating webcam box */
+    #cam-box {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 280px;
+      background: #000;
+      border: 3px solid #ff6b6b;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 30px #ff6b6b88;
+      display: none;
+      flex-direction: column;
+      z-index: 999;
+      animation: slideIn 0.4s ease;
+      cursor: grab;
+      user-select: none;
+    }
+
+    #cam-box.dragging { cursor: grabbing; }
+
+    @keyframes slideIn {
+      from { transform: translateY(100px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    #cam-header {
+      background: #ff6b6b;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    #rec-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #rec-dot {
+      width: 12px;
+      height: 12px;
+      background: red;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+      box-shadow: 0 0 6px red;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.1; }
+    }
+
+    #cam-video {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+      transform: scaleX(-1); /* mirror */
+    }
+
+    #cam-label {
+      background: rgba(0,0,0,0.75);
+      color: #ffd93d;
+      text-align: center;
+      padding: 6px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    #close-cam {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 4px;
+      margin: 0;
+      box-shadow: none;
+    }
+    #close-cam:hover { transform: scale(1.2); box-shadow: none; }
+  </style>
+</head>
+<body>
+
+  <h1>What's so funny huh Kate?</h1>
+
+  <div id="joke-section">
+    <p id="setup"></p>
+    <p id="punchline"></p>
+    <button id="joke-btn" onclick="tellJoke()">Hit me with a dad joke</button>
+  </div>
+
+  <!-- Floating webcam -->
+  <div id="cam-box">
+    <div id="cam-header">
+      <div id="rec-indicator">
+        <div id="rec-dot"></div>
+        <span>REC</span>
+      </div>
+      <span>LIVE LAUGH CAM</span>
+      <button id="close-cam" onclick="closeCam()" title="Close">✕</button>
+    </div>
+    <video id="cam-video" autoplay playsinline muted></video>
+    <div id="cam-label">😂 LIVE LAUGH CAM 😂</div>
+  </div>
+
+  <script>
+    let jokeTold = false;
+    let camStream = null;
+
+    async function tellJoke() {
+      if (jokeTold) return;
+      jokeTold = true;
+
+      const btn = document.getElementById('joke-btn');
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      // Short suspense delay
+      await delay(800);
+
+      const punchline = document.getElementById('punchline');
+      punchline.textContent = "Because they make up everything! 😂";
+      punchline.classList.add('visible');
+
+      btn.textContent = "wait, is that...";
+
+      await delay(1200);
+
+      // Now spring the webcam trap
+      btn.textContent = "😂 GOT YOU 😂";
+      launchCam();
+    }
+
+    async function launchCam() {
+      const box = document.getElementById('cam-box');
+      box.style.display = 'flex';
+
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const video = document.getElementById('cam-video');
+        video.srcObject = camStream;
+      } catch (err) {
+        const video = document.getElementById('cam-video');
+        video.style.display = 'none';
+        const label = document.getElementById('cam-label');
+        label.textContent = "😱 Camera denied — hiding something, Kate?";
+      }
+    }
+
+    function closeCam() {
+      if (camStream) {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
+      }
+      document.getElementById('cam-box').style.display = 'none';
+    }
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Drag support for the cam box
+    const camBox = document.getElementById('cam-box');
+    let isDragging = false, dragOffX = 0, dragOffY = 0;
+
+    camBox.addEventListener('mousedown', e => {
+      if (e.target.id === 'close-cam') return;
+      isDragging = true;
+      camBox.classList.add('dragging');
+      const rect = camBox.getBoundingClientRect();
+      dragOffX = e.clientX - rect.left;
+      dragOffY = e.clientY - rect.top;
+      // switch to absolute positioning for free drag
+      camBox.style.right = 'auto';
+      camBox.style.bottom = 'auto';
+      camBox.style.left = rect.left + 'px';
+      camBox.style.top = rect.top + 'px';
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      camBox.style.left = (e.clientX - dragOffX) + 'px';
+      camBox.style.top  = (e.clientY - dragOffY) + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      camBox.classList.remove('dragging');
+    });
+  </script>
+</body>
+</html>
