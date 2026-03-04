@@ -188,31 +188,53 @@
   </div>
 
   <script>
-    let jokeTold = false;
+    const jokes = [
+      { setup: "Why can't you trust an atom?", punchline: "Because they make up everything! 😂" },
+      { setup: "Why did the scarecrow win an award?", punchline: "Because he was outstanding in his field! 😂" },
+      { setup: "I'm reading a book about anti-gravity.", punchline: "It's impossible to put down! 😂" },
+      { setup: "Why don't eggs tell jokes?", punchline: "They'd crack each other up! 😂" },
+      { setup: "Did you hear about the guy who invented Lifesavers?", punchline: "He made a mint! 😂" },
+    ];
+    let jokeIndex = 0;
+    let busy = false;
     let camStream = null;
 
     async function tellJoke() {
-      if (jokeTold) return;
-      jokeTold = true;
+      if (busy) return;
+      busy = true;
 
       const btn = document.getElementById('joke-btn');
+      const setup = document.getElementById('setup');
+      const punchline = document.getElementById('punchline');
+
       btn.disabled = true;
       btn.textContent = '...';
+      punchline.classList.remove('visible');
+      punchline.textContent = '';
 
-      // Short suspense delay
-      await delay(800);
+      await delay(400);
 
-      const punchline = document.getElementById('punchline');
-      punchline.textContent = "Because they make up everything! 😂";
-      punchline.classList.add('visible');
-
-      btn.textContent = "wait, is that...";
+      const joke = jokes[jokeIndex % jokes.length];
+      setup.textContent = joke.setup;
 
       await delay(1200);
 
-      // Now spring the webcam trap
-      btn.textContent = "😂 GOT YOU 😂";
-      launchCam();
+      punchline.textContent = joke.punchline;
+      punchline.classList.add('visible');
+
+      jokeIndex++;
+      btn.textContent = jokeIndex === 1 ? "wait, is that..." : "Another one!";
+
+      await delay(1200);
+
+      if (jokeIndex === 1) {
+        btn.textContent = "😂 GOT YOU 😂";
+        launchCam();
+      } else {
+        btn.textContent = "Another one!";
+        btn.disabled = false;
+        busy = false;
+      }
     }
 
     async function launchCam() {
