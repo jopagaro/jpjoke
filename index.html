@@ -214,13 +214,11 @@
       await delay(1200);
 
       if (jokeIndex === 1) {
-        btn.textContent = "😂 GOT YOU 😂";
         launchCam();
-      } else {
-        btn.textContent = "Another one!";
-        btn.disabled = false;
-        busy = false;
       }
+      btn.textContent = "Another one!";
+      btn.disabled = false;
+      busy = false;
     }
 
     let mediaRecorder = null;
